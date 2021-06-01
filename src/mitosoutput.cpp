@@ -6,11 +6,11 @@
 #include <string>
 #include <ctime>
 
-#include <LineInformation.h> // symtabAPI
+//#include <LineInformation.h> // symtabAPI
 #include <CodeObject.h> // parseAPI
 #include <InstructionDecoder.h> // instructionAPI
 using namespace Dyninst;
-using namespace SymtabAPI;
+//using namespace SymtabAPI;
 using namespace ParseAPI;
 using namespace InstructionAPI;
 
@@ -116,28 +116,28 @@ int Mitos_write_sample(perf_event_sample *sample, mitos_output *mout)
             sample->cpu,
             sample->weight,
             sample->data_src);
-    
+
     return 0;
 }
 
 int Mitos_post_process(char *bin_name, mitos_output *mout)
 {
     // Open Symtab object and code source object
-    Symtab *symtab_obj;
-    SymtabCodeSource *symtab_code_src;
-
-    int sym_success = Symtab::openFile(symtab_obj,bin_name);
-    if(!sym_success)
-    {
-        std::cerr << "Mitos: Failed to open Symtab object for " << bin_name << std::endl;
-        return 1;
-    }
-
-    symtab_code_src = new SymtabCodeSource(bin_name);
+    // Symtab *symtab_obj;
+    // SymtabCodeSource *symtab_code_src;
+    //
+    // int sym_success = Symtab::openFile(symtab_obj,bin_name);
+    // if(!sym_success)
+    // {
+    //     std::cerr << "Mitos: Failed to open Symtab object for " << bin_name << std::endl;
+    //     return 1;
+    // }
+    //
+    // symtab_code_src = new SymtabCodeSource(bin_name);
 
     // Get machine information
     unsigned int inst_length = InstructionDecoder::maxInstructionLength;
-    Architecture arch = symtab_obj->getArchitecture();
+    // Architecture arch = symtab_obj->getArchitecture();
 
     // Open input/output files
     std::ifstream fraw(mout->fname_raw);
@@ -164,35 +164,35 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
         ip = (uint64_t)strtoull(ip_str.c_str(),NULL,0);
 
         // Parse ip for source line info
-        std::vector<Statement*> stats;
-        sym_success = symtab_obj->getSourceLines(stats,ip);
-        if(sym_success)
-        {
-            source << stats[0]->getFile();
-            line_num << stats[0]->getLine();
-        }
-
-        // Parse ip for instruction info
-        void *inst_raw = NULL;
-        if(symtab_code_src->isValidAddress(ip))
-        {
-            inst_raw = symtab_code_src->getPtrToInstruction(ip);
-
-            if(inst_raw)
-            {
-                // Get instruction
-                InstructionDecoder dec(inst_raw,inst_length,arch);
-                Instruction::Ptr inst = dec.decode();
-                Operation op = inst->getOperation();
-                entryID eid = op.getID();
-                
-                instruction << NS_x86::entryNames_IAPI[eid];
-
-                // Get bytes read
-                if(inst->readsMemory())
-                    bytes << getReadSize(inst);
-            }
-        }
+        // std::vector<Statement*> stats;
+        // sym_success = symtab_obj->getSourceLines(stats,ip);
+        // if(sym_success)
+        // {
+        //     source << stats[0]->getFile();
+        //     line_num << stats[0]->getLine();
+        // }
+        //
+        // // Parse ip for instruction info
+        // void *inst_raw = NULL;
+        // if(symtab_code_src->isValidAddress(ip))
+        // {
+        //     inst_raw = symtab_code_src->getPtrToInstruction(ip);
+        //
+        //     if(inst_raw)
+        //     {
+        //         // Get instruction
+        //         InstructionDecoder dec(inst_raw,inst_length,arch);
+        //         Instruction::Ptr inst = dec.decode();
+        //         Operation op = inst->getOperation();
+        //         entryID eid = op.getID();
+        //
+        //         instruction << NS_x86::entryNames_IAPI[eid];
+        //
+        //         // Get bytes read
+        //         if(inst->readsMemory())
+        //             bytes << getReadSize(inst);
+        //     }
+        // }
 
         // Write out the sample
         fproc << (source.str().empty()      ? "??" : source.str()       ) << ","
@@ -214,4 +214,3 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
 
     return 0;
 }
-
