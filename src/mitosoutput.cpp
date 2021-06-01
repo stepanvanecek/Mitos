@@ -115,7 +115,7 @@ int Mitos_write_sample(perf_event_sample *sample, mitos_output *mout)
             sample->addr,
             sample->cpu,
             sample->weight,
-            sample->data_src);
+            sample->data_src & 0xF);
 
     return 0;
 }
