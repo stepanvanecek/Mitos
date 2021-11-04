@@ -1,5 +1,6 @@
 *~
 *.o
 *.swp
-
+*.DS_Store
 build/
+inst-dir/

@@ -9,10 +9,11 @@
 //#include <LineInformation.h> // symtabAPI
 #include <CodeObject.h> // parseAPI
 #include <InstructionDecoder.h> // instructionAPI
+#include <Module.h>
 using namespace Dyninst;
-//using namespace SymtabAPI;
-using namespace ParseAPI;
+using namespace SymtabAPI;
 using namespace InstructionAPI;
+using namespace ParseAPI;
 
 #include "hwloc_dump.h"
 #include "x86_util.h"
@@ -123,21 +124,21 @@ int Mitos_write_sample(perf_event_sample *sample, mitos_output *mout)
 int Mitos_post_process(char *bin_name, mitos_output *mout)
 {
     // Open Symtab object and code source object
-    // Symtab *symtab_obj;
-    // SymtabCodeSource *symtab_code_src;
-    //
-    // int sym_success = Symtab::openFile(symtab_obj,bin_name);
-    // if(!sym_success)
-    // {
-    //     std::cerr << "Mitos: Failed to open Symtab object for " << bin_name << std::endl;
-    //     return 1;
-    // }
-    //
-    // symtab_code_src = new SymtabCodeSource(bin_name);
+    SymtabAPI::Symtab *symtab_obj;
+    SymtabCodeSource *symtab_code_src;
+
+    int sym_success = SymtabAPI::Symtab::openFile(symtab_obj,bin_name);
+    if(!sym_success)
+    {
+        std::cerr << "Mitos: Failed to open Symtab object for " << bin_name << std::endl;
+        return 1;
+    }
+
+    symtab_code_src = new SymtabCodeSource(bin_name);
 
     // Get machine information
     unsigned int inst_length = InstructionDecoder::maxInstructionLength;
-    // Architecture arch = symtab_obj->getArchitecture();
+    Architecture arch = symtab_obj->getArchitecture();
 
     // Open input/output files
     std::ifstream fraw(mout->fname_raw);
@@ -146,10 +147,22 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
     // Write header for processed samples
     fproc << "source,line,instruction,bytes,ip,variable,buffer_size,dims,xidx,yidx,zidx,pid,tid,time,addr,cpu,latency,data_src\n";
 
+    //get base (.text) virtual address of the measured process
+    std::ifstream foffset("/u/home/vanecek/sshfs/sv_mitos/build/test3.txt");
+    long long offsetAddr = 0;
+    string str_offset;
+    if(std::getline(foffset, str_offset).good())
+    {
+        offsetAddr = strtoll(str_offset.c_str(),NULL,0);
+    }
+    foffset.close();
+    cout << "offset: " << offsetAddr << endl;
+
     // Read raw samples one by one and get attribute from ip
-    uint64_t ip;
+    Dyninst::Offset ip;
     size_t ip_endpos;
     std::string line, ip_str;
+    int tmp_line = 0;
     while(std::getline(fraw, line).good())
     {
         // Unknown values
@@ -161,38 +174,76 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
         // Extract ip
         size_t ip_endpos = line.find(',');
         std::string ip_str = line.substr(0,ip_endpos);
-        ip = (uint64_t)strtoull(ip_str.c_str(),NULL,0);
-
+        ip = (Dyninst::Offset)(strtoull(ip_str.c_str(),NULL,0) - offsetAddr);
+        if(tmp_line%400==0)
+            cout << ip << endl;
         // Parse ip for source line info
-        // std::vector<Statement*> stats;
-        // sym_success = symtab_obj->getSourceLines(stats,ip);
-        // if(sym_success)
+        std::vector<SymtabAPI::Statement::Ptr> stats;
+        sym_success = symtab_obj->getSourceLines(stats, ip);
+
+        // if(tmp_line%100==0)
         // {
-        //     source << stats[0]->getFile();
-        //     line_num << stats[0]->getLine();
-        // }
+        //     Offset addressInRange = ip;
+        //     std::vector<SymtabAPI::Statement::Ptr> lines = stats;
         //
-        // // Parse ip for instruction info
-        // void *inst_raw = NULL;
-        // if(symtab_code_src->isValidAddress(ip))
-        // {
-        //     inst_raw = symtab_code_src->getPtrToInstruction(ip);
+        //     unsigned int originalSize = lines.size();
+        //     std::set<Module*> mods_for_offset;
+        //     symtab_obj->findModuleByOffset(mods_for_offset, addressInRange);
         //
-        //     if(inst_raw)
+        //     cout << "mods found: " << mods_for_offset.size() << endl;
+        //     for(auto i = mods_for_offset.begin();
+        //     i != mods_for_offset.end();
+        //     ++i)
         //     {
-        //         // Get instruction
-        //         InstructionDecoder dec(inst_raw,inst_length,arch);
-        //         Instruction::Ptr inst = dec.decode();
-        //         Operation op = inst->getOperation();
-        //         entryID eid = op.getID();
-        //
-        //         instruction << NS_x86::entryNames_IAPI[eid];
-        //
-        //         // Get bytes read
-        //         if(inst->readsMemory())
-        //             bytes << getReadSize(inst);
+        //         (*i)->getSourceLines(lines, addressInRange);
         //     }
+        //
+        //     cout << "line " << tmp_line << "sym_success " << sym_success << endl;
+        //
+        //     // const_iterator start_addr_valid = project<SymtabAPI::Statement::addr_range>(get<SymtabAPI::Statement::upper_bound>().lower_bound(addressInRange ));
+        //     // const_iterator end_addr_valid = impl_t::upper_bound(addressInRange );
+        //     // cout << start_addr_valid << endl << end_addr_valid << endl;
+        //     // while(start_addr_valid != end_addr_valid && start_addr_valid != end())
+        //     // {
+        //     //     if(*(*start_addr_valid) == addressInRange)
+        //     //     {
+        //     //         lines.push_back(*start_addr_valid);
+        //     //     }
+        //     //     ++start_addr_valid;
+        //     // }
+        //
+        //     cout << std::hex << "Statement: < [" << stats[0]->startAddr() << ", " << stats[0]->endAddr() << "): "
+        //    << std::dec << stats[0]->getFile() << ":" << stats[0]->getLine() << " >" << endl;
         // }
+
+        if(sym_success)
+        {
+            //cout << "file " << stats[0]->getFile() << " line: "  << stats[0]->getLine();
+            source << stats[0]->getFile();
+            line_num << stats[0]->getLine();
+        }
+
+        // Parse ip for instruction info
+        void *inst_raw = NULL;
+        if(symtab_code_src->isValidAddress(ip))
+        {
+            inst_raw = symtab_code_src->getPtrToInstruction(ip);
+
+            if(inst_raw)
+            {
+                // Get instruction
+                InstructionDecoder dec(inst_raw,inst_length,arch);
+                Instruction inst = dec.decode();
+                Operation op = inst.getOperation();
+                entryID eid = op.getID();
+
+                instruction << NS_x86::entryNames_IAPI[eid];
+
+                // Get bytes read
+                if(inst.readsMemory())
+                    bytes << getReadSize(inst);
+            }
+        }
 
         // Write out the sample
         fproc << (source.str().empty()      ? "??" : source.str()       ) << ","
@@ -200,6 +251,8 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
               << (instruction.str().empty() ? "??" : instruction.str()  ) << ","
               << (bytes.str().empty()       ? "??" : bytes.str()        ) << ","
               << line << std::endl;
+
+        tmp_line++;
     }
 
     fproc.close();

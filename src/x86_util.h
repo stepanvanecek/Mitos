@@ -6,16 +6,16 @@
 using namespace std;
 
 #include <Instruction.h>
-#include <Operation.h>
+//#include <Operation.h>
 #include <Expression.h>
 using namespace Dyninst;
 using namespace InstructionAPI;
 
-size_t getReadSize(Instruction::Ptr ins)
+size_t getReadSize(Instruction ins)
 {
     // Get all read operands and their expressions
     vector<Operand> opds;
-    ins->getOperands(opds);
+    ins.getOperands(opds);
     set<Expression::Ptr> memAccessors;
     for(int i=0; i<opds.size(); i++)
     {
@@ -34,4 +34,3 @@ size_t getReadSize(Instruction::Ptr ins)
     }
     return readsz;
 }
-
