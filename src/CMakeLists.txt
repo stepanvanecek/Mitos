@@ -13,16 +13,15 @@ add_library(mitos SHARED ${MITOS_SRC_FILES})
 add_executable(mitosrun mitosrun.cpp)
 
 # Linkage
-target_link_libraries(mitos hwloc symtabAPI instructionAPI parseAPI ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(mitos hwloc symtabAPI instructionAPI parseAPI ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
 target_link_libraries(mitosrun mitos)
 
 # Install
 install(FILES ${MITOS_HDR_PUBLIC}
         DESTINATION "include/Mitos")
-install(TARGETS mitosrun 
+install(TARGETS mitosrun
         EXPORT mitos-targets
         DESTINATION bin)
-install(TARGETS mitos 
+install(TARGETS mitos
         EXPORT mitos-targets
         DESTINATION lib)
-

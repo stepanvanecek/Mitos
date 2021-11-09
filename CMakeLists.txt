@@ -18,6 +18,7 @@ find_package(Boost REQUIRED)
 find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
 find_package(OpenMP)
 
+set(CMAKE_CXX_STANDARD "17")
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
@@ -31,4 +32,3 @@ export(PACKAGE Mitos)
 # Install cmake export
 install(EXPORT mitos-targets DESTINATION lib/Mitos)
 install(FILES mitos-config.cmake DESTINATION lib/Mitos)
-
