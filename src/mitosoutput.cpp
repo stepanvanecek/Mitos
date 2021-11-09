@@ -5,6 +5,22 @@
 #include <sstream>
 #include <string>
 #include <ctime>
+#include <cstdlib>
+
+#ifndef __has_include
+  static_assert(false, "__has_include not supported");
+#else
+#  if __cplusplus >= 201703L && __has_include(<filesystem>)
+#    include <filesystem>
+     namespace fs = std::filesystem;
+#  elif __has_include(<experimental/filesystem>)
+#    include <experimental/filesystem>
+     namespace fs = std::experimental::filesystem;
+#  elif __has_include(<boost/filesystem.hpp>)
+#    include <boost/filesystem.hpp>
+     namespace fs = boost::filesystem;
+#  endif
+#endif
 
 //#include <LineInformation.h> // symtabAPI
 #include <CodeObject.h> // parseAPI
@@ -65,6 +81,23 @@ int Mitos_create_output(mitos_output *mout)
     {
         std::cerr << "Mitos: Failed to create processed output file!\n";
         return 1;
+    }
+
+    //copy over source code to mitos output folder
+    if (!mout->dname_srcdir_orig.empty())
+    {
+        if(!fs::exists(mout->dname_srcdir_orig))
+        {
+            std::cerr << "Mitos: Source code path " << mout->dname_srcdir_orig << "does not exist!\n";
+            return 1;
+        }
+        std::error_code ec;
+        fs::copy(mout->dname_srcdir_orig, mout->dname_srcdir, ec);
+        if(ec)
+        {
+            std::cerr << "Mitos: Source code path " << mout->dname_srcdir_orig << "was not copied. Error " << ec.value() << ".\n";
+            return 1;
+        }
     }
 
     mout->ok = true;
@@ -166,7 +199,7 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
     while(std::getline(fraw, line).good())
     {
         // Unknown values
-        std::stringstream source;
+        std::string source;
         std::stringstream line_num;
         std::stringstream instruction;
         std::stringstream bytes;
@@ -175,7 +208,7 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
         size_t ip_endpos = line.find(',');
         std::string ip_str = line.substr(0,ip_endpos);
         ip = (Dyninst::Offset)(strtoull(ip_str.c_str(),NULL,0) - offsetAddr);
-        if(tmp_line%400==0)
+        if(tmp_line%4000==0)
             cout << ip << endl;
         // Parse ip for source line info
         std::vector<SymtabAPI::Statement::Ptr> stats;
@@ -218,8 +251,15 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
 
         if(sym_success)
         {
-            //cout << "file " << stats[0]->getFile() << " line: "  << stats[0]->getLine();
-            source << stats[0]->getFile();
+            source = (string)stats[0]->getFile();
+            if (!mout->dname_srcdir_orig.empty())
+            {
+                std::size_t pos = source.find(mout->dname_srcdir_orig);
+                if(pos == 0){
+                    source = source.substr(mout->dname_srcdir_orig.length() + (mout->dname_srcdir_orig.back() == '/' ? 0 : 1)); //to remove slash if there is none in the string
+                }
+
+            }
             line_num << stats[0]->getLine();
         }
 
@@ -246,7 +286,7 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
         }
 
         // Write out the sample
-        fproc << (source.str().empty()      ? "??" : source.str()       ) << ","
+        fproc << (source.empty()            ? "??" : source             ) << ","
               << (line_num.str().empty()    ? "??" : line_num.str()     ) << ","
               << (instruction.str().empty() ? "??" : instruction.str()  ) << ","
               << (bytes.str().empty()       ? "??" : bytes.str()        ) << ","

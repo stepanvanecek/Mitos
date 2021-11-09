@@ -2,6 +2,7 @@
 #define MITOS_H
 
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -20,7 +21,7 @@ enum sample_mode
 };
 
 /*
- * Mitos: 
+ * Mitos:
  * All programs must invoke from these functions.
  */
 
@@ -66,7 +67,7 @@ int Mitos_post_process(char *bin_name, mitos_output *mout);
  * Struct containing all raw perf event information
  */
 
-struct perf_event_sample 
+struct perf_event_sample
 {
     //struct perf_event_header header;
     uint64_t   sample_id;           /* if PERF_SAMPLE_IDENTIFIER */
@@ -110,6 +111,8 @@ struct mitos_output
     char *dname_topdir;
     char *dname_datadir;
     char *dname_srcdir;
+
+    std::string dname_srcdir_orig;
 
     char *fname_raw;
     char *fname_processed;
