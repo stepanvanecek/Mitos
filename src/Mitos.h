@@ -111,6 +111,7 @@ struct mitos_output
     char *dname_topdir;
     char *dname_datadir;
     char *dname_srcdir;
+    char *dname_hwdatadir;
 
     std::string dname_srcdir_orig;
 

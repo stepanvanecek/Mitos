@@ -53,11 +53,17 @@ int Mitos_create_output(mitos_output *mout)
     ss_dname_srcdir << ss_dname_topdir.str() << "/src";
     mout->dname_srcdir = strdup(ss_dname_srcdir.str().c_str());
 
+    // Set hwdata directory name
+    std::stringstream ss_dname_hwdatadir;
+    ss_dname_hwdatadir << ss_dname_topdir.str() << "/hwdata";
+    mout->dname_hwdatadir = strdup(ss_dname_hwdatadir.str().c_str());
+
     // Create the directories
     int err;
     err = mkdir(mout->dname_topdir,0777);
     err |= mkdir(mout->dname_datadir,0777);
     err |= mkdir(mout->dname_srcdir,0777);
+    err |= mkdir(mout->dname_hwdatadir,0777);
 
     if(err)
     {
@@ -108,7 +114,7 @@ int Mitos_create_output(mitos_output *mout)
 int Mitos_pre_process(mitos_output *mout)
 {
     // Create hardware topology file for current hardware
-    std::string fname_hardware = std::string(mout->dname_topdir) + "/hardware.xml";
+    std::string fname_hardware = std::string(mout->dname_hwdatadir) + "/hwloc.xml";
     int err = dump_hardware_xml(fname_hardware.c_str());
     if(err)
     {
@@ -121,6 +127,15 @@ int Mitos_pre_process(mitos_output *mout)
     if(err)
     {
         std::cerr << "Mitos: Failed to move hardware topology file to output directory!\n";
+        return 1;
+    }
+
+    std::string fname_lshw = std::string(mout->dname_hwdatadir) + "/lshw.xml";
+    std::string lshw_cmd = "lshw -c memory -xml > " + fname_lshw;
+    err = system(lshw_cmd.c_str());
+    if(err)
+    {
+        std::cerr << "Mitos: Failed to create hardware topology file!\n";
         return 1;
     }
 
