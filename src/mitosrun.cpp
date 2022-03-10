@@ -29,6 +29,7 @@ void dump_samples()
 
 void sample_handler(perf_event_sample *sample, void *args)
 {
+
     samples.push_back(*sample);
 
     if(samples.size() >= bufsz)
@@ -162,7 +163,6 @@ int main(int argc, char **argv)
         }
 
         Mitos_set_sample_mode(SMPL_MEMORY);
-
         Mitos_set_sample_period(period);
         Mitos_set_sample_threshold(thresh);
 

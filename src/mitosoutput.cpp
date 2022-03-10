@@ -150,7 +150,7 @@ int Mitos_write_sample(perf_event_sample *sample, mitos_output *mout)
     Mitos_resolve_symbol(sample);
 
     fprintf(mout->fout_raw,
-            "%llu,%s,%llu,%llu,%llu,%llu,%llu,%u,%u,%llu,%llu,%u,%llu,%llu\n",
+            "%lu,%s,%lu,%lu,%lu,%lu,%lu,%u,%u,%lu,%lu,%u,%lu,%lu,%d\n",
             sample->ip,
             sample->data_symbol,
             sample->data_size,
@@ -164,7 +164,8 @@ int Mitos_write_sample(perf_event_sample *sample, mitos_output *mout)
             sample->addr,
             sample->cpu,
             sample->weight,
-            sample->data_src & 0xF);
+            sample->data_src & 0xF,
+            sample->numa_node);
 
     return 0;
 }
@@ -193,7 +194,7 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
     std::ofstream fproc(mout->fname_processed);
 
     // Write header for processed samples
-    fproc << "source,line,instruction,bytes,ip,variable,buffer_size,dims,xidx,yidx,zidx,pid,tid,time,addr,cpu,latency,data_src\n";
+    fproc << "source,line,instruction,bytes,ip,variable,buffer_size,dims,xidx,yidx,zidx,pid,tid,time,addr,cpu,latency,data_src,numa\n";
 
     //get base (.text) virtual address of the measured process
     std::ifstream foffset("/u/home/vanecek/sshfs/sv_mitos/build/test3.txt");

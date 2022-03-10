@@ -99,6 +99,7 @@ struct perf_event_sample
     size_t num_dims;
     size_t access_index[3];
     const char *data_symbol;
+    int numa_node;
 };
 
 struct mitos_output

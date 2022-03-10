@@ -8,12 +8,13 @@ set(MITOS_HDR_PUBLIC Mitos.h)
 
 # Libraries (created)
 add_library(mitos SHARED ${MITOS_SRC_FILES})
+#add_library(numa SHARED ${MITOS_SRC_FILES})
 
 # Binaries
 add_executable(mitosrun mitosrun.cpp)
 
 # Linkage
-target_link_libraries(mitos hwloc symtabAPI instructionAPI parseAPI ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
+target_link_libraries(mitos hwloc -lnuma symtabAPI instructionAPI parseAPI ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
 target_link_libraries(mitosrun mitos)
 
 # Install
@@ -23,5 +24,5 @@ install(TARGETS mitosrun
         EXPORT mitos-targets
         DESTINATION bin)
 install(TARGETS mitos
-        EXPORT mitos-targets
+        EXPORT "mitos-targets;numa"
         DESTINATION lib)

@@ -3,12 +3,23 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <numaif.h>
+#include <numa.h>
+#include <sched.h>
+
 
 perfsmpl *psmpl;
 pthread_mutex_t sample_mutex;
 
 void signal_thread_handler(int sig, siginfo_t *info, void *extra)
 {
+    // unsigned int myCpu, myNuma;
+    // if(getcpu(&myCpu, &myNuma) != 0){
+    //     std::cerr << "getcpu failed" << std::endl; return;
+    // }
+    // std::cout << "cpu " << myCpu << " processing samples" << std::endl;
+
+
     // Block incoming signals
     sigset_t blocksig;
     sigemptyset(&blocksig);
@@ -79,6 +90,9 @@ void perfsmpl::init_attr()
     {
         // TODO: look this up in libpfm
         pe.type = PERF_TYPE_RAW;
+        //0x100B - 100H Nehalem
+        //0x5101cd - sandy bridge and newer
+        //0xD005 - cooper lake
         pe.config = 0x5101cd;
         pe.config1 = sample_threshold; // ldlat
         pe.sample_type =
@@ -120,6 +134,7 @@ int perfsmpl::init_perf()
     if(fd == -1)
     {
         perror("perf_event_open");
+        //cat /proc/sys/kernel/perf_event_paranoid -> set to -1
         return 1;
     }
 
@@ -174,7 +189,7 @@ int perfsmpl::init_sighandler()
             perror("sigaction");
             return 1;
         }
-    }
+    }//--> check if SIGIO is in current set; if yes, remove it (SIG_UNBLOCK)
 
     // Set perf event fd to signal
     ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0)|O_ASYNC);
@@ -194,7 +209,7 @@ int perfsmpl::init_sighandler()
     {
         perror("fcntl");
         return 1;
-    } 
+    }
 
     return 0;
 }
@@ -259,7 +274,7 @@ int perfsmpl::process_single_sample(struct perf_event_mmap_page *mmap_buf)
 
     // Fill up our sample
     memset(&pes,0,sizeof(pes));
-    
+
     if(has_attribute(PERF_SAMPLE_IP))
     {
         read_mmap_buffer(mmap_buf,(char*)&pes.ip,sizeof(uint64_t));
@@ -319,6 +334,19 @@ int perfsmpl::process_single_sample(struct perf_event_mmap_page *mmap_buf)
     if(has_attribute(PERF_SAMPLE_DATA_SRC))
     {
         read_mmap_buffer(mmap_buf,(char*)&pes.data_src,sizeof(uint64_t));
+
+        //get numa reqion of the variable
+        int numa_n = -1;
+        int ret=-100;
+        if(has_attribute(PERF_SAMPLE_IP) && (pes.data_src & 0xF) > 2)
+        {
+            void* ptr_to_check = (void*)&(pes.ip);
+            ret=move_pages(0 , 1, &ptr_to_check, NULL, &numa_n, 0);
+            //ret=move_pages(0 , 1, (void**)&pes.ip, NULL, &numa_n, 0);
+        }
+
+        if(ret == 0)
+            pes.numa_node = numa_n;
     }
 
     if(handler_fn_defined)
@@ -335,13 +363,13 @@ int perfsmpl::process_sample_buffer()
     int ret;
 
 
-    for(;;) 
+    for(;;)
     {
         ret = read_mmap_buffer(mmap_buf,(char*)&ehdr,sizeof(ehdr));
         if(ret)
             return 0; // no more samples
 
-        switch(ehdr.type) 
+        switch(ehdr.type)
         {
             case PERF_RECORD_SAMPLE:
                 process_single_sample(mmap_buf);
@@ -372,7 +400,6 @@ int perfsmpl::read_mmap_buffer(struct perf_event_mmap_page *mmap_buf, char *out,
 	char *data;
 	unsigned long tail;
 	size_t avail_sz, m, c;
-
 	data = ((char *)mmap_buf)+sysconf(_SC_PAGESIZE);
 	tail = mmap_buf->data_tail & pgmsk;
 	avail_sz = mmap_buf->data_head - mmap_buf->data_tail;
@@ -465,4 +492,3 @@ const char* Mitos_data_source(struct perf_event_sample *s)
 
     return "Invalid Data Source";
 }
-
