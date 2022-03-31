@@ -23,14 +23,14 @@
 #endif
 
 //#include <LineInformation.h> // symtabAPI
-#include <CodeObject.h> // parseAPI
+/*#include <CodeObject.h> // parseAPI
 #include <InstructionDecoder.h> // instructionAPI
 #include <Module.h>
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 using namespace ParseAPI;
-
+*/
 #include "hwloc_dump.h"
 #include "x86_util.h"
 
@@ -172,7 +172,7 @@ int Mitos_write_sample(perf_event_sample *sample, mitos_output *mout)
 
 int Mitos_post_process(char *bin_name, mitos_output *mout)
 {
-    // Open Symtab object and code source object
+/*    // Open Symtab object and code source object
     SymtabAPI::Symtab *symtab_obj;
     SymtabCodeSource *symtab_code_src;
 
@@ -320,6 +320,6 @@ int Mitos_post_process(char *bin_name, mitos_output *mout)
         std::cerr << "Mitos: Failed to delete raw sample file!\n";
         return 1;
     }
-
+*/
     return 0;
 }
