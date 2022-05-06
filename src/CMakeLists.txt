@@ -14,7 +14,7 @@ add_library(mitos SHARED ${MITOS_SRC_FILES})
 add_executable(mitosrun mitosrun.cpp)
 
 # Linkage
-target_link_libraries(mitos hwloc -lnuma symtabAPI instructionAPI parseAPI ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
+target_link_libraries(mitos hwloc numa symtabAPI instructionAPI parseAPI ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
 target_link_libraries(mitosrun mitos)
 
 # Install
