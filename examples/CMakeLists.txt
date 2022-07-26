@@ -6,7 +6,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
-add_executable(api_test api_test.cpp)
+#add_executable(api_test api_test.cpp)
 add_executable(matmul matmul.cpp)
 add_executable(mpi_matmul mpi_matmul.cpp)
 #add_executable(dyninst-test dyninst-test.cpp)
