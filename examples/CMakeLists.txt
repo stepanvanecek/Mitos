@@ -12,6 +12,5 @@ add_executable(mpi_matmul mpi_matmul.cpp)
 #add_executable(dyninst-test dyninst-test.cpp)
 
 target_link_libraries(api_test mitos symtabAPI)
-target_link_libraries(mitos symtabAPI dl)
 #target_link_libraries(dyninst-test mitos symtabAPI dl)
 target_link_libraries(mpi_matmul ${MPI_LIBRARIES})
